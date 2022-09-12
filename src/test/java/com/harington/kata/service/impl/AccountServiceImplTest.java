@@ -1,8 +1,10 @@
 package com.harington.kata.service.impl;
 
 import com.harington.kata.dto.AccountDto;
+import com.harington.kata.dto.CustomerDto;
 import com.harington.kata.entity.Account;
 import com.harington.kata.repository.AccountRepository;
+import com.harington.kata.service.CustomerService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,7 +17,9 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.modelmapper.ModelMapper;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -24,6 +28,9 @@ class AccountServiceImplTest {
 
     @InjectMocks
     private AccountServiceImpl accountServiceImpl ;
+
+    @Mock
+    private CustomerService customerService;
 
     @Mock
     private AccountRepository accountRepository;
@@ -75,7 +82,7 @@ class AccountServiceImplTest {
         account.setAmount(100);
 
         Mockito.when(this.accountRepository.save(Mockito.any())).thenReturn(account);
-        AccountServiceImpl accountService = new AccountServiceImpl(accountRepository, new ModelMapper());
+        AccountServiceImpl accountService = new AccountServiceImpl(accountRepository, null, new ModelMapper());
 
         Assertions.assertNotNull(accountService.save(accountDto));
     }
@@ -104,7 +111,7 @@ class AccountServiceImplTest {
         Mockito.when(this.accountRepository.findById(Mockito.anyLong())).thenReturn(Optional.of(account));
         Mockito.when(this.accountRepository.save(Mockito.any())).thenReturn(account);
 
-        AccountServiceImpl accountService = new AccountServiceImpl(accountRepository, new ModelMapper());
+        AccountServiceImpl accountService = new AccountServiceImpl(accountRepository, null, new ModelMapper());
         AccountDto result =  accountService.deposit(accountDto, 10);
 
         Assertions.assertEquals(result.getAmount(), 110);
@@ -152,10 +159,37 @@ class AccountServiceImplTest {
         Mockito.when(this.accountRepository.findById(Mockito.anyLong())).thenReturn(Optional.of(accountDB));
         Mockito.when(this.accountRepository.save(Mockito.any())).thenReturn(accountSaved);
 
-        AccountServiceImpl accountService = new AccountServiceImpl(accountRepository, new ModelMapper());
+        AccountServiceImpl accountService = new AccountServiceImpl(accountRepository, null, new ModelMapper());
         AccountDto result =  accountService.withdrawal(accountDto, amount);
 
         Assertions.assertEquals(result.getAmount(), 30);
+    }
+
+    @Test
+    void testGetAllAccountsByCustomer(){
+        AccountDto account1Dto = new AccountDto() ;
+        account1Dto.setId(1L);
+
+        AccountDto account2Dto = new AccountDto() ;
+        account2Dto.setId(2L);
+
+        Set<AccountDto> accounts = new HashSet<>();
+        accounts.add(account1Dto);
+        accounts.add(account2Dto);
+
+        CustomerDto customerDto = new CustomerDto();
+        customerDto.setId(44L);
+        customerDto.setAccounts(accounts);
+
+        Mockito.when(this.customerService.getCustomerById(Mockito.anyLong())).thenReturn(customerDto);
+
+        Assertions.assertEquals(this.accountServiceImpl.getAllAccountsByCustomer(44L).size(), 2);
+    }
+
+    @Test
+    void testGetAllAccountsWhenCustomerNull(){
+        Mockito.when(this.customerService.getCustomerById(Mockito.anyLong())).thenReturn(null);
+        Assertions.assertNull(this.accountServiceImpl.getAllAccountsByCustomer(44L));
     }
 
 }

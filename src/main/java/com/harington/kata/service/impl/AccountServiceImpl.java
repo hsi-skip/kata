@@ -1,26 +1,31 @@
 package com.harington.kata.service.impl;
 
 import com.harington.kata.dto.AccountDto;
+import com.harington.kata.dto.CustomerDto;
 import com.harington.kata.entity.Account;
 import com.harington.kata.repository.AccountRepository;
 import com.harington.kata.service.AccountService;
+import com.harington.kata.service.CustomerService;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
+    private final CustomerService customerService;
     private final ModelMapper modelMapper;
 
     Logger logger = LoggerFactory.getLogger(AccountServiceImpl.class);
 
-    public AccountServiceImpl(AccountRepository accountRepository, ModelMapper modelMapper){
+    public AccountServiceImpl(AccountRepository accountRepository, CustomerService customerService,ModelMapper modelMapper){
         this.accountRepository = accountRepository;
+        this.customerService = customerService;
         this.modelMapper = modelMapper;
     }
 
@@ -84,9 +89,17 @@ public class AccountServiceImpl implements AccountService {
                 return account.map(Account::getAmount).orElse(null);
             }
         } catch (NullPointerException e){
-            logger.error("Exception: {} during getBalance", 1, e);
-        }
+            logger.error("Exception: {} during getBalance", 1, e); }
 
         return 0;
+    }
+
+    @Override
+    public Set<AccountDto> getAllAccountsByCustomer(Long customerId){
+        CustomerDto customerDto = customerService.getCustomerById(customerId);
+        if(customerDto != null){
+            return customerDto.getAccounts();
+        }
+        return null;
     }
 }
