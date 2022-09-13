@@ -61,7 +61,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public AccountDto withdrawal(AccountDto accountDto, double amount){
+    public synchronized AccountDto withdrawal(AccountDto accountDto, double amount){
 
         if(amount <= 0 || getBalance(accountDto) < amount){
             logger.warn("Amount {} is less than 0 or greater than Balance", amount);
