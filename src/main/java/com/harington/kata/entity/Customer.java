@@ -29,6 +29,12 @@ public class Customer {
 
     private LocalDate birthday;
 
+    private String username;
+
+    private String password;
+
+    private String role;
+
     @OneToMany(mappedBy = "customer", cascade = CascadeType.REMOVE)
     private Set<Account> accounts;
 

@@ -15,5 +15,8 @@ public class CustomerDto {
         private String lastName;
         private String email;
         private LocalDate birthday;
+        private String username;
+        private String password;
+        private String role;
         private Set<AccountDto> accounts;
 }
