@@ -21,6 +21,6 @@ public class Account {
     private double amount;
 
     @ManyToOne()
-    @JoinColumn(name = "account_id")
+    @JoinColumn(name = "customer_id")
     private Customer customer;
 }
