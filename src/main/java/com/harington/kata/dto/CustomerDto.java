@@ -4,11 +4,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
 
 @Getter
 @Setter
-
 public class CustomerDto {
         private Long id;
         private String firstName;
@@ -18,5 +18,5 @@ public class CustomerDto {
         private String username;
         private String password;
         private String role;
-        private Set<AccountDto> accounts;
+        private Set<AccountDto> accounts = new HashSet<>();;
 }

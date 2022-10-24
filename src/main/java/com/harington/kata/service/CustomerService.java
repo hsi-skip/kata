@@ -4,6 +4,6 @@ import com.harington.kata.dto.CustomerDto;
 
 public interface CustomerService {
 
-    CustomerDto getCustomerById(long id);
+    CustomerDto getCustomerById(Long id);
 
 }

@@ -1,195 +1,147 @@
 package com.harington.kata.service.impl;
 
-import com.harington.kata.dto.AccountDto;
-import com.harington.kata.dto.CustomerDto;
 import com.harington.kata.entity.Account;
 import com.harington.kata.repository.AccountRepository;
-import com.harington.kata.service.CustomerService;
-import org.junit.jupiter.api.Assertions;
+import com.harington.kata.repository.CustomerRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.modelmapper.ModelMapper;
 
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 
 class AccountServiceImplTest {
 
-    @InjectMocks
-    private AccountServiceImpl accountServiceImpl ;
+    AccountServiceImpl accountService;
+    CustomerServiceImpl customerService;
 
-    @Mock
-    private CustomerService customerService;
+    @Mock AccountRepository accountRepository;
+    @Mock CustomerRepository customerRepository;
+    @Mock ModelMapper modelMapper;
 
-    @Mock
-    private AccountRepository accountRepository;
+    Long accountId = 1L;
+    double negativeAmount = -33;
+    double positiveAmount = 33;
+    double zeroAmount = 0;
 
-    @Mock
-    private ModelMapper modelMapper;
+    @BeforeEach
+    void setUp(){
+        accountService = new AccountServiceImpl(accountRepository, customerService, modelMapper);
+        customerService = new CustomerServiceImpl(customerRepository, modelMapper);
+    }
 
     @Test
     void testGetAccountById(){
-        Account account = new Account() ;
-        account.setId(1L);
-        Mockito.when(this.accountRepository.findById(Mockito.anyLong())).thenReturn(Optional.of(account));
-        BDDMockito.given(this.modelMapper.map(account, AccountDto.class)).willReturn(new AccountDto());
-        Assertions.assertNotNull(this.accountServiceImpl.getAccountById(1L));
+        accountService.getAccountById(anyLong());
+        verify(accountRepository).findById(anyLong());
     }
 
     @Test
-    void testGetBalanceEquals(){
-        Account accountDb = new Account() ;
-        accountDb.setId(1L);
-        accountDb.setAmount(20);
+    void testGetBalance(){
+        Account account = new Account();
+        account.setId(accountId);
 
-        AccountDto accountDto = new AccountDto() ;
-        accountDto.setId(2L);
-        accountDto.setAmount(20);
-
-        Mockito.when(this.accountRepository.findById(Mockito.anyLong())).thenReturn(Optional.of(accountDb));
-        Assertions.assertEquals(this.accountServiceImpl.getBalance(accountDto), accountDb.getAmount());
+        when(accountRepository.findById(anyLong())).thenReturn(Optional.of(account));
+        accountService.getBalance(accountId);
+        verify(accountRepository).findById(accountId);
     }
 
     @Test
-    void testGetBalanceException(){
-        AccountDto accountDto = new AccountDto() ;
-        accountDto.setId(2L);
-        accountDto.setAmount(20);
+    void testGetBalanceWhenThrowException(){
+        given(accountRepository.findById(accountId)).willReturn(Optional.empty());
 
-        Mockito.when(this.accountRepository.findById(Mockito.anyLong())).thenThrow(NullPointerException.class);
-        Assertions.assertEquals(this.accountServiceImpl.getBalance(accountDto), 0);
-    }
+        assertThatThrownBy(() -> accountService.getBalance(accountId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Account id: " + accountId + " not found");
 
-    @Test
-    void testSave(){
-        AccountDto accountDto = new AccountDto() ;
-        accountDto.setId(1L);
-        accountDto.setAmount(100);
-
-        Account account = new Account() ;
-        account.setId(1L);
-        account.setAmount(100);
-
-        Mockito.when(this.accountRepository.save(Mockito.any())).thenReturn(account);
-        AccountServiceImpl accountService = new AccountServiceImpl(accountRepository, null, new ModelMapper());
-
-        Assertions.assertNotNull(accountService.save(accountDto));
+        verify(accountRepository, times(1)).findById(accountId);
     }
 
     @Test
     void testDepositNumberZero(){
-        Assertions.assertNull(this.accountServiceImpl.deposit (null, 0));
+        assertThatThrownBy(() -> accountService.deposit(accountId, zeroAmount))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Amount " + zeroAmount + " is negative or Zero");
+
+        verify(accountRepository, never()).save(any());
     }
 
     @Test
     void testDepositNumberNegative(){
-        Assertions.assertNull(this.accountServiceImpl.deposit (null, -1));
+
+        assertThatThrownBy(() -> accountService.deposit(accountId, negativeAmount))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Amount " + negativeAmount + " is negative or Zero");
+
+        verify(accountRepository, never()).save(any());
     }
 
 
     @Test
-    void testDepositAmount(){
-        Account account = new Account() ;
-        account.setId(1L);
-        account.setAmount(110);
+    void testDepositNumberPositive(){
 
-        AccountDto accountDto = new AccountDto() ;
-        accountDto.setId(1L);
-        accountDto.setAmount(100);
+        Account account = new Account();
+        account.setId(accountId);
 
-        Mockito.when(this.accountRepository.findById(Mockito.anyLong())).thenReturn(Optional.of(account));
-        Mockito.when(this.accountRepository.save(Mockito.any())).thenReturn(account);
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
+        accountService.deposit(accountId, positiveAmount);
 
-        AccountServiceImpl accountService = new AccountServiceImpl(accountRepository, null, new ModelMapper());
-        AccountDto result =  accountService.deposit(accountDto, 10);
-
-        Assertions.assertEquals(result.getAmount(), 110);
-    }
-
-    @Test
-    void testWithdrawalLessThanZero(){
-        AccountDto accountDto = new AccountDto() ;
-        accountDto.setId(1L);
-        accountDto.setAmount(100);
-
-        Assertions.assertNull(this.accountServiceImpl.withdrawal (accountDto, -1));
+        ArgumentCaptor<Account> accountArgumentCaptor = ArgumentCaptor.forClass(Account.class);
+        verify(accountRepository).save(accountArgumentCaptor.capture());
+        Account capturedAccount = accountArgumentCaptor.getValue();
+        assertThat(capturedAccount).isEqualTo(account);
     }
 
     @Test
     void testWithdrawalAmountGreaterThanBalance(){
+        double balance = 100;
+        double amountGreater = 500;
+
         Account account = new Account();
-        account.setId(1L);
-        account.setAmount(100);
+        account.setId(accountId);
+        account.setAmount(balance);
 
-        AccountDto accountDto = new AccountDto() ;
-        accountDto.setId(1L);
-        accountDto.setAmount(100);
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
 
-        Mockito.when(this.accountRepository.findById(Mockito.anyLong())).thenReturn(Optional.of(account));
-        Assertions.assertNull(this.accountServiceImpl.withdrawal (accountDto, 200));
+        assertThatThrownBy(() -> accountService.withdrawal(accountId, amountGreater))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Amount is greater than Balance");
+
+        verify(accountRepository, times(1)).findById(accountId);
+        verify(accountRepository, never()).save(account);
     }
 
     @Test
     void testWithdrawalAmountLessThanBalance(){
-        Account accountDB = new Account();
-        accountDB.setId(1L);
-        accountDB.setAmount(100);
+        double balance = 500;
+        double withdrawalAmount = 100;
 
-        Account accountSaved = new Account();
-        accountSaved.setId(1L);
-        accountSaved.setAmount(30);
+        Account account = new Account();
+        account.setId(accountId);
+        account.setAmount(balance);
 
-        AccountDto accountDto = new AccountDto() ;
-        accountDto.setId(1L);
-        accountDto.setAmount(100);
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
+        accountService.withdrawal(accountId, withdrawalAmount);
 
-        double amount = 70;
-
-        Mockito.when(this.accountRepository.findById(Mockito.anyLong())).thenReturn(Optional.of(accountDB));
-        Mockito.when(this.accountRepository.save(Mockito.any())).thenReturn(accountSaved);
-
-        AccountServiceImpl accountService = new AccountServiceImpl(accountRepository, null, new ModelMapper());
-        AccountDto result =  accountService.withdrawal(accountDto, amount);
-
-        Assertions.assertEquals(result.getAmount(), 30);
-    }
-
-    @Test
-    void testGetAllAccountsByCustomer(){
-        AccountDto account1Dto = new AccountDto() ;
-        account1Dto.setId(1L);
-
-        AccountDto account2Dto = new AccountDto() ;
-        account2Dto.setId(2L);
-
-        Set<AccountDto> accounts = new HashSet<>();
-        accounts.add(account1Dto);
-        accounts.add(account2Dto);
-
-        CustomerDto customerDto = new CustomerDto();
-        customerDto.setId(44L);
-        customerDto.setAccounts(accounts);
-
-        Mockito.when(this.customerService.getCustomerById(Mockito.anyLong())).thenReturn(customerDto);
-
-        Assertions.assertEquals(this.accountServiceImpl.getAllAccountsByCustomer(44L).size(), 2);
-    }
-
-    @Test
-    void testGetAllAccountsWhenCustomerNull(){
-        Mockito.when(this.customerService.getCustomerById(Mockito.anyLong())).thenReturn(null);
-        Assertions.assertNull(this.accountServiceImpl.getAllAccountsByCustomer(44L));
+        ArgumentCaptor<Account> accountArgumentCaptor = ArgumentCaptor.forClass(Account.class);
+        verify(accountRepository).save(accountArgumentCaptor.capture());
+        Account capturedAccount = accountArgumentCaptor.getValue();
+        assertThat(capturedAccount).isEqualTo(account);
     }
 
 }

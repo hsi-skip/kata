@@ -5,6 +5,7 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
 
 @Getter
@@ -36,6 +37,6 @@ public class Customer {
     private String role;
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.REMOVE)
-    private Set<Account> accounts;
+    private Set<Account> accounts = new HashSet<>();
 
 }

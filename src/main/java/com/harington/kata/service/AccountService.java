@@ -2,19 +2,17 @@ package com.harington.kata.service;
 
 import com.harington.kata.dto.AccountDto;
 
+import java.util.Optional;
 import java.util.Set;
 
 public interface AccountService {
 
-    AccountDto getAccountById(long id);
+    Optional<AccountDto> getAccountById(long id);
 
-    AccountDto save(AccountDto accountDto);
+    double getBalance(Long accountId);
 
-    AccountDto deposit(AccountDto accountDto, double amount);
+    void deposit(Long accountId, double amount);
 
-    AccountDto withdrawal(AccountDto accountDto, double amount);
+    void withdrawal(Long accountId, double amount);
 
-    double getBalance(AccountDto accountDto);
-
-    Set<AccountDto> getAllAccountsByCustomer(Long id);
 }

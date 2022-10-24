@@ -1,13 +1,10 @@
 package com.harington.kata.service.impl;
 
 import com.harington.kata.dto.CustomerDto;
-import com.harington.kata.entity.Customer;
 import com.harington.kata.repository.CustomerRepository;
 import com.harington.kata.service.CustomerService;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 public class CustomerServiceImpl implements CustomerService {
@@ -21,9 +18,10 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public CustomerDto getCustomerById(long id){
-        Optional<Customer> optionalCustomer = customerRepository.findById(id);
-        return optionalCustomer.map(customer -> modelMapper.map(customer, CustomerDto.class)).orElse(null);
+    public CustomerDto getCustomerById(Long customerId){
+        return customerRepository.findById(customerId)
+                .map(customer -> modelMapper.map(customer, CustomerDto.class))
+                .orElseThrow(() -> new IllegalArgumentException("Customer id: " + customerId + " Not found"));
     }
 
 }
